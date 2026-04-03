@@ -1,29 +1,28 @@
-DocuMind Pro – AI Document Q&A System
+#  DocuMind Pro – AI Document Q&A System
 
-DocuMind Pro is an AI-powered document intelligence system that allows users to upload PDF documents and interact with them through a chat-based interface. The system uses Retrieval-Augmented Generation (RAG) with a large language model to generate answers based on document content.
+##  Overview
 
-Users can ask questions about uploaded documents and receive contextual responses in real time.
+**DocuMind Pro** is an AI-powered document intelligence system that enables users to upload PDF documents and interact with them through a conversational interface.
 
+It leverages **Retrieval-Augmented Generation (RAG)** with a local Large Language Model to provide accurate, context-aware answers based on document content.
 
- Features:
+---
 
-Upload PDF documents
+##  Features
 
-Ask questions about document content
+*  Upload PDF documents
+*  Ask questions in a chat interface
+*  AI-generated contextual responses
+*  Real-time interaction
+*  FastAPI backend for inference
+*  Streamlit frontend for UI
+*  Local LLM inference using **LLaMA3 via Ollama**
 
-Chat-based interface
+---
 
-AI-generated contextual answers
+## System Architecture
 
-FastAPI backend for API handling
-
-Streamlit interface for interactive UI
-
-Local LLM inference using LLaMA3 via Ollama
-
-
-
- System Architecture:
+```id="arch02"
 User
  ↓
 Streamlit Chat Interface
@@ -37,115 +36,151 @@ LangChain
 LLaMA3 (Ollama)
  ↓
 Generated Response
- Tech Stack
+```
 
+---
 
-Programming:
+##  Tech Stack
 
-Python
+###  Programming
 
+* Python
 
-Backend:
+###  Backend
 
-FastAPI
+* FastAPI
 
+###  Frontend
 
-Frontend:
+* Streamlit
 
-Streamlit
+###  AI / LLM
 
+* LangChain
+* LLaMA3
+* Ollama
 
-AI / LLM:
+###  Document Processing
 
-LangChain
+* PDF Parsing
 
-LLaMA3
+---
 
-Ollama
+##  Project Structure
 
-
-Document Processing:
-
-PDF parsing
-
-
-Project Structure:
+```id="struct02"
 documind/
 │
 ├── app.py              # FastAPI backend
 ├── streamlit_app.py    # Streamlit frontend
-├── launcher.py         # Runs backend + frontend
+├── launcher.py         # Run backend + frontend together
 └── README.md
+```
 
-Installation:
+---
 
-1. Clone repository
+##  Installation
+
+### 1️ Clone the Repository
+
+```id="clone02"
 git clone https://github.com/yourusername/documind.git
 cd documind
-2. Install dependencies
+```
+
+---
+
+### 2️ Install Dependencies
+
+```id="install02"
 pip install -r requirements.txt
-3. Install Ollama
+```
 
+---
 
-Download Ollama:
-https://ollama.ai
+### 3️ Install Ollama
 
+Download from:
+ https://ollama.ai
 
-Pull the model:
+---
+
+### 4️ Pull LLaMA3 Model
+
+```id="ollama02"
 ollama pull llama3
+```
 
+---
 
-Run the Application:
+##  Run the Application
 
-Start the backend:
+### Start FastAPI Backend
 
+```id="runapi02"
 uvicorn app:app --host 127.0.0.1 --port 8000
+```
 
-Run Streamlit:
+---
 
+### Run Streamlit UI
+
+```id="runui02"
 streamlit run streamlit_app.py
+```
 
-Open in browser:
+---
 
+### Open in Browser
+
+```id="url02"
 http://localhost:8501
+```
+
+---
+
+##  How It Works
+
+1. User uploads a PDF document
+2. Backend processes and extracts text
+3. User submits a query
+4. Query is passed through **LangChain**
+5. Relevant context is retrieved
+6. **LLaMA3 (via Ollama)** generates an answer
+7. Response is displayed in chat UI
+
+---
+
+##  Use Cases
+
+*  Research document analysis
+*  Knowledge base assistants
+* Study material interaction
+* Corporate document search
+
+---
+
+##  Future Improvements
+
+*  Vector database integration (FAISS / Chroma)
+*  Document chunking & embeddings
+* Source citations in responses
+*  Multi-document support
+* Streaming responses
+
+---
+
+##  Notes
+
+* Ensure Ollama is running before starting the app
+* Model must be downloaded (`llama3`)
+* Large documents may require optimization
+
+---
+
+##  Author
+
+**Ayush Poojari**
+GitHub: https://github.com/ayushpoojari3699
 
 
-How It Works:
-
-User uploads a PDF document
-
-Backend processes the document
-
-User asks a question
-
-Query is sent to the LLM through LangChain
-
-LLaMA3 generates a contextual response
-
-Answer is displayed in the chat interface
-
-
-
-Future Improvements:
-
-Vector database integration (FAISS / Chroma)
-
-Document chunking and embeddings
-
-Source citations
-
-Multi-document support
-
-Streaming responses
-
-
-
-Use Cases:
-
-Research document analysis
-
-Knowledge base assistants
-
-Study material interaction
-
-Corporate document search
