@@ -1,123 +1,65 @@
-from fastapi import FastAPI, UploadFile, File
-from langchain_community.document_loaders import PyPDFLoader
-from langchain_community.llms import Ollama
+"""DocuMind FastAPI backend: upload PDFs, ask questions, get cited answers."""
 
-import os
-import shutil
-import traceback
+from pathlib import Path
 
-app = FastAPI(title="DocuMind Pro – No Indexing Version")
+from fastapi import FastAPI, File, HTTPException, Query, UploadFile
 
-# ===============================
-# CONFIG
-# ===============================
+from rag_core import DEFAULT_TOP_K, DOCS_DIR, NoDocumentsError, RAGEngine
 
-DOCS_DIR = "docs"
-os.makedirs(DOCS_DIR, exist_ok=True)
+app = FastAPI(title="DocuMind – RAG Document Q&A")
+engine = RAGEngine()
 
-llm = Ollama(model="llama3")
-
-# ===============================
-# HEALTH CHECK (IMPORTANT)
-# ===============================
 
 @app.get("/health")
 def health():
-    return {"status": "ok"}
+    return {"status": "ok", "documents": len(engine.documents())}
 
-# ===============================
-# UPLOAD PDF
-# ===============================
 
 @app.post("/upload")
 async def upload(file: UploadFile = File(...)):
+    name = Path(file.filename or "").name  # strip any client-supplied folders
+    if not name.lower().endswith(".pdf"):
+        raise HTTPException(400, "Only PDF files are supported.")
+
+    path = DOCS_DIR / name
+    path.write_bytes(await file.read())
     try:
+        return {"status": "indexed", **engine.add_pdf(path)}
+    except ValueError as e:
+        path.unlink(missing_ok=True)
+        raise HTTPException(422, str(e))
 
-        # remove old PDFs
-        for f in os.listdir(DOCS_DIR):
-            os.remove(os.path.join(DOCS_DIR, f))
 
-        path = os.path.join(DOCS_DIR, file.filename)
+@app.get("/documents")
+def documents():
+    return {"documents": engine.documents()}
 
-        with open(path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
 
-        return {
-            "status": "uploaded",
-            "file": file.filename
-        }
+@app.delete("/documents")
+def clear_documents():
+    engine.reset()
+    return {"status": "cleared"}
 
-    except Exception as e:
-        traceback.print_exc()
-        return {"error": str(e)}
 
-# ===============================
-# LOAD DOCUMENT TEXT
-# ===============================
+@app.delete("/documents/{filename}")
+def remove_document(filename: str):
+    removed = engine.remove_source(filename)
+    if not removed:
+        raise HTTPException(404, f"{filename} is not indexed.")
+    (DOCS_DIR / Path(filename).name).unlink(missing_ok=True)
+    return {"status": "removed", "file": filename, "chunks": removed}
 
-def load_document():
-    try:
-
-        for f in os.listdir(DOCS_DIR):
-
-            if f.lower().endswith(".pdf"):
-
-                loader = PyPDFLoader(os.path.join(DOCS_DIR, f))
-                docs = loader.load()
-
-                text = "\n\n".join([d.page_content for d in docs])
-
-                return text[:8000]  # limit for speed
-
-        return None
-
-    except Exception as e:
-        traceback.print_exc()
-        return None
-
-# ===============================
-# ASK QUESTION
-# ===============================
 
 @app.get("/ask")
-def ask(q: str):
-
+def ask(q: str = Query(..., min_length=1), k: int = Query(DEFAULT_TOP_K, ge=1, le=10)):
+    if not q.strip():
+        raise HTTPException(400, "Empty question.")
     try:
-
-        if not q.strip():
-            return {"error": "Empty question"}
-
-        text = load_document()
-
-        if not text:
-            return {"error": "No document uploaded"}
-
-        prompt = f"""
-You are an intelligent document assistant.
-
-The user uploaded a document.
-
-User request:
-{q}
-
-Document content:
-{text}
-
-Instructions:
-- If user asks for summary → summarize the document
-- If user asks question → answer using the document
-- If user asks improvement or suggestions → provide clear bullet points
-- Keep answers clear and structured
-"""
-
-        answer = llm.invoke(prompt)
-
-        return {
-            "question": q,
-            "answer": answer
-        }
-
-    except Exception as e:
-
-        traceback.print_exc()
-        return {"error": str(e)}
+        return engine.answer(q.strip(), k=k)
+    except NoDocumentsError as e:
+        raise HTTPException(400, str(e))
+    except Exception as e:  # most often: Ollama is not running
+        msg = str(e)
+        if "Connection" in msg or "11434" in msg:
+            raise HTTPException(503, "Can't reach Ollama. Start it and run `ollama pull llama3`.")
+        raise HTTPException(500, msg)

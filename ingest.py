@@ -1,22 +1,25 @@
-from langchain_community.document_loaders import PyPDFLoader, TextLoader
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_community.embeddings import HuggingFaceEmbeddings
-from langchain_community.vectorstores import FAISS
-import os
+"""Index every PDF in the docs/ folder from the command line.
 
-docs = []
-for file in os.listdir("docs"):
-    path = os.path.join("docs", file)
-    if file.endswith(".pdf"):
-        docs.extend(PyPDFLoader(path).load())
-    elif file.endswith(".txt"):
-        docs.extend(TextLoader(path).load())
+Usage:  python ingest.py
+"""
 
-splitter = RecursiveCharacterTextSplitter(chunk_size=800, chunk_overlap=150)
-chunks = splitter.split_documents(docs)
+from rag_core import DOCS_DIR, RAGEngine
 
-embeddings = HuggingFaceEmbeddings(model_name="BAAI/bge-small-en")
-db = FAISS.from_documents(chunks, embeddings)
-db.save_local("vector_store")
 
-print("✅ Documents indexed into vector_store")
+def main():
+    engine = RAGEngine()
+    pdfs = sorted(DOCS_DIR.glob("*.pdf"))
+    if not pdfs:
+        print(f"No PDFs found in {DOCS_DIR}/")
+        return
+    for pdf in pdfs:
+        try:
+            info = engine.add_pdf(pdf)
+            print(f"Indexed {info['file']}: {info['pages']} pages -> {info['chunks']} chunks")
+        except ValueError as e:
+            print(f"Skipped {pdf.name}: {e}")
+    print(f"Done. {len(engine.documents())} document(s) in the index.")
+
+
+if __name__ == "__main__":
+    main()

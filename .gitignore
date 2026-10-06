@@ -1,8 +1,20 @@
+# environments & builds
 rag-env/
+.venv/
+venv/
 __pycache__/
+*.pyc
 build/
 dist/
 *.exe
 *.spec
-*.pyc
+
+# runtime data (uploaded PDFs and the FAISS index stay on your machine)
+docs/
+vector_store/
 outputs/
+eval_questions.json
+
+# secrets / scratch
+.env
+_to_delete/
