@@ -10,7 +10,8 @@ langchain-community==0.4.1
 langchain-text-splitters==1.1.1
 faiss-cpu==1.13.2
 sentence-transformers==5.2.3
+mcp>=2,<3          # MCP server + client (mcp_server.py, mcp_chat.py)
+httpx              # mcp_chat.py talks to Ollama
 
 # tests only
 pytest
-httpx
